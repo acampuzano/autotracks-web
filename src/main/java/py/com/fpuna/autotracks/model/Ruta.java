@@ -3,6 +3,7 @@ package py.com.fpuna.autotracks.model;
 import java.io.Serializable;
 import java.sql.Timestamp;
 import java.util.List;
+import java.util.Objects;
 
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
@@ -73,5 +74,32 @@ public class Ruta implements Serializable {
     public void setServerId(Long serverId) {
         this.serverId = serverId;
     }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == null) {
+            return false;
+        } else if (obj instanceof Ruta) {
+            Ruta objRuta = (Ruta) obj;
+            if (objRuta.getServerId() != null 
+                    && objRuta.getServerId() == this.getServerId()) {
+                return true;
+            }
+            if (objRuta.getId() != null 
+                    && objRuta.getId() == this.getId()) {
+                return true;
+            }
+        }
+        return false; //To change body of generated methods, choose Tools | Templates.
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 5;
+        hash = 89 * hash + Objects.hashCode(this.id);
+        return hash;
+    }
+    
+    
 
 }
