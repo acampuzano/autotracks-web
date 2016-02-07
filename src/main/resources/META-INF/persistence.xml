@@ -8,6 +8,7 @@
 		<class>py.com.fpuna.autotracks.model.Asu2po4pgr</class>
 		<exclude-unlisted-classes>false</exclude-unlisted-classes>
 		<properties>
+                    <property name="hibernate.hbm2ddl.auto" value="update"/>
 		</properties>
 	</persistence-unit>
 </persistence>
