@@ -1,7 +1,7 @@
 'use strict';
 angular.module('trafico', []).controller('TraficoController', ['$scope', '$http', function($scope, $http) {
 
-        var baseUrl = 'http://209.208.108.214:8080/autotracks/resources';
+        var baseUrl = 'http://162.243.25.166:8080/autotracks/resources';
 
         /*
          * INICIALIZACION DE LA APP
@@ -58,7 +58,10 @@ angular.module('trafico', []).controller('TraficoController', ['$scope', '$http'
             eliminarTrayectos();
             var inicio = angular.element(document.querySelector('#fecha')).val();
             
-            var url = baseUrl + '/rutas/traficoFecha?fecha=' + encodeURIComponent(inicio)
+            //var url = baseUrl + '/rutas/traficoFecha?fecha=' + encodeURIComponent(inicio)
+			
+            var url = baseUrl + '/rutas/traficoFechaTiempo?fecha=' + encodeURIComponent(inicio)
+                    + '&minutos=180';
             
             $http.get(url).success(function(data) {
                 var polyline;
