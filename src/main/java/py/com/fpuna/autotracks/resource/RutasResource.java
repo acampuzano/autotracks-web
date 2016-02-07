@@ -1,8 +1,15 @@
 package py.com.fpuna.autotracks.resource;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import com.google.gson.JsonPrimitive;
 import java.sql.Timestamp;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.logging.Level;
@@ -25,6 +32,8 @@ import py.com.fpuna.autotracks.service.RutasService;
 @Produces("application/json")
 @Consumes("application/json")
 public class RutasResource {
+    
+    private static Logger logger = Logger.getLogger("Rutas");
 
     @Inject
     RutasService rutasService;
@@ -127,7 +136,7 @@ public class RutasResource {
         Integer milis = 0;
         try {
             //se transforma el tiempo a milisegundos
-            milis = Integer.getInteger(minutos) * 60 * 1000;
+            milis = Integer.parseInt(minutos) * 60 * 1000;
             fec = sdf.parse(fecha);
         } catch (ParseException ex) {
             Logger.getLogger(RutasResource.class.getName()).log(Level.SEVERE, "Error al transformar la fecha", ex);
@@ -145,6 +154,64 @@ public class RutasResource {
     @Path("/traficoGlobal")
     public List<Trafico> obtenerTraficoGlobal() {
         return rutasService.obtenerTrafico();
+    }
+    
+    /**
+     * Método para guardar las localizaciones recibidas desde los buses
+     * @param ruta
+     * @return 
+     */
+    @POST
+    @Path("/bus")
+    public Resultado guardarRutaBus(String localizaciones) {
+        JsonParser parser = new JsonParser();
+        JsonElement jElement = parser.parse(localizaciones);
+        JsonArray jArray = jElement.getAsJsonArray();
+        
+        List<Ruta> rutas = new ArrayList<Ruta>();
+        
+        Gson gson = new Gson();
+        JsonObject jObject;
+        JsonPrimitive jPrimitive;
+        Localizacion loc;
+        Ruta rutaTmp;
+        long busId;
+        
+        try {
+            for (JsonElement json: jArray) {
+                jObject = json.getAsJsonObject();
+                jPrimitive = jObject.getAsJsonPrimitive("busId");
+                busId = jPrimitive.getAsLong();
+                jObject.remove("busId");
+                rutaTmp = new Ruta(busId);
+
+
+                //se obtiene la localización
+                loc = gson.fromJson(jObject.toString(), Localizacion.class);
+
+                if (rutas.contains(rutaTmp)) {
+                    rutaTmp = rutas.get(rutas.indexOf(rutaTmp));
+                    loc.setRuta(rutaTmp);
+                    rutaTmp.getLocalizaciones().add(loc);
+                } else {
+                    rutaTmp.setLocalizaciones(new ArrayList<Localizacion>());
+                    loc.setRuta(rutaTmp);
+                    rutaTmp.getLocalizaciones().add(loc);
+                    rutas.add(rutaTmp);
+                }
+            }
+
+            //Se guardan las rutas
+            for (Ruta ruta: rutas) {
+                rutasService.guardarRuta(ruta);
+            }
+            
+        } catch (Exception e) {
+            logger.log(Level.SEVERE, "error a guardar localizaciones de buses", e);
+            return new Resultado(false, "error al guardar las localizaciones: " + e.getMessage(), new Long(0));
+        }
+        
+        return new Resultado(true, "las lozalizaciones se guardaron correctamente", new Long(0));
     }
 
 }
