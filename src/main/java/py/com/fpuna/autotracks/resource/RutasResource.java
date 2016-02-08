@@ -1,6 +1,7 @@
 package py.com.fpuna.autotracks.resource;
 
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -27,13 +28,14 @@ import py.com.fpuna.autotracks.model.Resultado;
 import py.com.fpuna.autotracks.model.Ruta;
 import py.com.fpuna.autotracks.model.Trafico;
 import py.com.fpuna.autotracks.service.RutasService;
+import py.com.fpuna.autotracks.util.TimestampDeserializer;
 
 @Path("rutas")
 @Produces("application/json")
 @Consumes("application/json")
 public class RutasResource {
     
-    private static Logger logger = Logger.getLogger("Rutas");
+    private static Logger logger = Logger.getLogger("Autotracks");
 
     @Inject
     RutasService rutasService;
@@ -170,7 +172,10 @@ public class RutasResource {
         
         List<Ruta> rutas = new ArrayList<Ruta>();
         
-        Gson gson = new Gson();
+        GsonBuilder gsonBuilder = new GsonBuilder();
+        gsonBuilder.registerTypeAdapter(Timestamp.class, new TimestampDeserializer());
+        Gson gson = gsonBuilder.create();
+        
         JsonObject jObject;
         JsonPrimitive jPrimitive;
         Localizacion loc;
@@ -183,7 +188,8 @@ public class RutasResource {
                 jPrimitive = jObject.getAsJsonPrimitive("busId");
                 busId = jPrimitive.getAsLong();
                 jObject.remove("busId");
-                rutaTmp = new Ruta(busId);
+                rutaTmp = new Ruta();
+                rutaTmp.setServerId(busId);
 
 
                 //se obtiene la localización
@@ -192,10 +198,13 @@ public class RutasResource {
                 if (rutas.contains(rutaTmp)) {
                     rutaTmp = rutas.get(rutas.indexOf(rutaTmp));
                     loc.setRuta(rutaTmp);
+                    loc.setMatched(false);
                     rutaTmp.getLocalizaciones().add(loc);
                 } else {
                     rutaTmp.setLocalizaciones(new ArrayList<Localizacion>());
+                    rutaTmp.setFecha(loc.getFecha());
                     loc.setRuta(rutaTmp);
+                    loc.setMatched(false);
                     rutaTmp.getLocalizaciones().add(loc);
                     rutas.add(rutaTmp);
                 }
