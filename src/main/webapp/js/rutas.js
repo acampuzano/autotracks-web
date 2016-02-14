@@ -1,7 +1,7 @@
 'use strict';
 angular.module('rutas', []).controller('RutasController', ['$scope', '$http', function($scope, $http) {
 
-        var baseUrl = 'http://162.243.25.166:8080/autotracks/resources';
+        var baseUrl = 'http://162.243.25.166:8080/topa-transito/resources';
 
         /*
          * INICIALIZACION DE LA APP

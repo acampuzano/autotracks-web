@@ -1,7 +1,7 @@
 'use strict';
 angular.module('trafico', []).controller('TraficoController', ['$scope', '$http', function($scope, $http) {
 
-        var baseUrl = 'http://162.243.25.166:8080/autotracks/resources';
+        var baseUrl = 'http://162.243.25.166:8080/topa-transito/resources';
 
         /*
          * INICIALIZACION DE LA APP
@@ -57,11 +57,12 @@ angular.module('trafico', []).controller('TraficoController', ['$scope', '$http'
         $scope.dibujarTraficoVelocidad = function() {
             eliminarTrayectos();
             var inicio = angular.element(document.querySelector('#fecha')).val();
+            var minutos = angular.element(document.querySelector('#minutos')).val();
             
             //var url = baseUrl + '/rutas/traficoFecha?fecha=' + encodeURIComponent(inicio)
 			
             var url = baseUrl + '/rutas/traficoFechaTiempo?fecha=' + encodeURIComponent(inicio)
-                    + '&minutos=180';
+                    + '&minutos=' + minutos;
             
             $http.get(url).success(function(data) {
                 var polyline;

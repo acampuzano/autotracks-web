@@ -1,7 +1,7 @@
 'use strict';
 angular.module('myApp', []).controller('RutasController', ['$scope', '$http', function($scope, $http) {
 
-        var baseUrl = 'http://162.243.25.166:8080/autotracks/resources';
+        var baseUrl = 'http://162.243.25.166:8080/topa-transito/resources';
 
         /*
          * INICIALIZACION DE LA APP
@@ -39,7 +39,7 @@ angular.module('myApp', []).controller('RutasController', ['$scope', '$http', fu
          */
         $scope.dibujarTraficoCalor = function() {
             eliminarTrayectos();
-            $http.get('http://209.208.108.214:8080/autotracks/resources/rutas/trafico').success(function(data) {
+            $http.get(baseUrl + '/rutas/trafico').success(function(data) {
                 $scope.trafico.clearLayers();
                 var polyline;
                 var color;
@@ -71,7 +71,7 @@ angular.module('myApp', []).controller('RutasController', ['$scope', '$http', fu
          */
         $scope.dibujarTraficoVelocidad = function() {
             eliminarTrayectos();
-            $http.get('http://209.208.108.214:8080/autotracks/resources/rutas/trafico').success(function(data) {
+            $http.get(baseUrl + '/rutas/trafico').success(function(data) {
                 var polyline;
                 var color;
                 for (var i = 0; i < data.length; i++) {
