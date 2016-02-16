@@ -1,5 +1,6 @@
 package py.com.fpuna.autotracks.matching2;
 
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
@@ -43,9 +44,50 @@ public class ShortestPathCalculation {
             + " LEFT JOIN asu_2po_4pgr r \n"
             + " ON p.edge = r.id\n"
             + " ORDER BY p.seq;";
+    
+    private static final String SQL_COSTO = "SELECT sum(cost), count(*) \n"
+            + "   FROM pgr_astar(\n"
+            + "     'SELECT id AS id, \n"
+            + "       source::integer, \n"
+            + "       target::integer, \n"
+            + "       km::double precision AS cost, \n"
+            + "       x1, \n"
+            + "       y1, \n"
+            + "       x2, \n"
+            + "       y2 \n"
+            + "     FROM asu_2po_4pgr', \n"
+            + "     :source, :target, true, false);";
 
     @PersistenceContext
     EntityManager em;
+    
+    public Double getShortestPathDistance(Candidate c1, Candidate c2) {
+        if (c1.getNearestVertex().getId() == c2.getNearestVertex().getId()) {
+            return c1.distanceTo(c1.getNearestVertex()) + c2.distanceTo(c2.getNearestVertex());
+        }
+        
+        int source = c1.getNearestVertex().getId();
+        int target = c2.getNearestVertex().getId();
+        
+        String sql = SQL_COSTO.replace(":source", String.valueOf(source))
+                        .replace(":target", String.valueOf(target));
+        
+        List<?> resultados = em.createNativeQuery(sql).getResultList();
+        
+        if (resultados.isEmpty()) {
+            return Double.valueOf("0");
+        } else {
+            Object[] columns = (Object[]) resultados.get(0);
+            if (((BigInteger)columns[1]).intValue() == 0) {
+                return Double.valueOf("0");
+            } else {
+                if (((Double)columns[0]).equals(Double.valueOf("0"))) {
+                    return c1.distanceTo(c2);
+                }
+            }
+            return (Double)columns[0] * 1000;
+        }
+    }
 
     public List<Result> getResults(Candidate c1, Candidate c2) {
         ArrayList<Result> results = new ArrayList<>();
