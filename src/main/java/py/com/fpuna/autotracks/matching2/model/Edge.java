@@ -1,5 +1,7 @@
 package py.com.fpuna.autotracks.matching2.model;
 
+import java.util.Objects;
+
 public class Edge {
     
     private int id;
@@ -53,6 +55,26 @@ public class Edge {
 
     public void calculateDistance() {
         length = source.distanceTo(target);
+    }
+    
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == null) {
+            return false;
+        } else if (obj instanceof Edge) {
+            Edge objEdge = (Edge) obj;
+            if (objEdge.getId() == this.getId()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 5;
+        hash = 57 * hash + Objects.hashCode(this.id);
+        return hash;
     }
 
 }
