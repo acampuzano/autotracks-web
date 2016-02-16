@@ -82,11 +82,11 @@ public class Ruta implements Serializable {
         } else if (obj instanceof Ruta) {
             Ruta objRuta = (Ruta) obj;
             if (objRuta.getServerId() != null 
-                    && objRuta.getServerId() == this.getServerId()) {
+                    && objRuta.getServerId().equals(this.getServerId())) {
                 return true;
             }
             if (objRuta.getId() != null 
-                    && objRuta.getId() == this.getId()) {
+                    && objRuta.getId().equals(this.getId())) {
                 return true;
             }
         }
