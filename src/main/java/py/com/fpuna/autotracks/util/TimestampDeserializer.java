@@ -29,8 +29,8 @@ public class TimestampDeserializer implements JsonDeserializer<Timestamp>{
     public Timestamp deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
         String date = json.getAsString();
         
-        SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
-        formatter.setTimeZone(TimeZone.getTimeZone("America/Asuncion"));
+        SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+//        formatter.setTimeZone(TimeZone.getTimeZone("America/Asuncion"));
         
         try {
             Date fecha = formatter.parse(date);
