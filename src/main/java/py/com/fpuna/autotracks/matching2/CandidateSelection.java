@@ -12,8 +12,8 @@ import py.com.fpuna.autotracks.matching2.model.Edge;
 import py.com.fpuna.autotracks.matching2.model.Vertex;
 
 public class CandidateSelection {
-    private static final double MIN_DIST = 50;
-    private static final double MAX_DIST = 200;
+    private static final double MIN_DIST = 10;
+    private static final double MAX_DIST = 150;
     private static final double RELATION_DEGREES_METER = 111159.0;
     private static final double ACCURACY_MULTIPLIER = 1.2;
 
@@ -66,8 +66,10 @@ public class CandidateSelection {
         if (point.getAccuracy() != null && point.getAccuracy() > MIN_DIST
                 && point.getAccuracy() < MAX_DIST) {
             radius = getAcuracyInDegrees(point.getAccuracy() * ACCURACY_MULTIPLIER);
-        } else {
+        } else if (point.getAccuracy() < MAX_DIST){
             radius = getAcuracyInDegrees(MIN_DIST);
+        } else {
+            radius = getAcuracyInDegrees(MAX_DIST);
         }
         String sql = SQL.replace(":geom", geom).replace(":dist", radius);
         List<?> result = em.createNativeQuery(sql).getResultList();
