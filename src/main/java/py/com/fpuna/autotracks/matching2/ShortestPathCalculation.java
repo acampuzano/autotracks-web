@@ -62,11 +62,20 @@ public class ShortestPathCalculation {
     EntityManager em;
     
     public Double getShortestPathDistance(Candidate c1, Candidate c2) {
+        
+        // Si ambos puntos candidatos estan sobre la misma linea
+        if (c1.getEdge().getId() == c2.getEdge().getId()) {
+            return c1.distanceTo(c2);
+        }
+        
+        // Si ambos puntos candidatos tienen el mismo vertice mas cercano
         if (c1.getNearestVertex().getId() == c2.getNearestVertex().getId()) {
             return c1.distanceTo(c1.getNearestVertex()) + c2.distanceTo(c2.getNearestVertex());
         }
         
-        int source = c1.getNearestVertex().getId();
+        return c1.distanceTo(c2.getNearestVertex()) + c2.distanceTo(c2.getNearestVertex());
+        
+        /*int source = c1.getNearestVertex().getId();
         int target = c2.getNearestVertex().getId();
         
         String sql = SQL_COSTO.replace(":source", String.valueOf(source))
@@ -86,7 +95,7 @@ public class ShortestPathCalculation {
                 }
             }
             return (Double)columns[0] * 1000;
-        }
+        }*/
     }
 
     public List<Result> getResults(Candidate c1, Candidate c2) {
