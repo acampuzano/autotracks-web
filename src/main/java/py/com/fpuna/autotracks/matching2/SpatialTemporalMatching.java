@@ -3,6 +3,7 @@ package py.com.fpuna.autotracks.matching2;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
@@ -36,11 +37,19 @@ public class SpatialTemporalMatching {
      */
     public List<Candidate> match(List<Point> trayectory) {
         List<Candidate> path = new ArrayList<>();
+        boolean error = false;
+        long inicio = System.currentTimeMillis();
         try {
             List<CandidateSet> graph = getCandidateSet(trayectory);
             path = findMatchedSequence(graph);       
         } catch (Exception e) {
-            LOG.log(Level.SEVERE, "Error al realizar el map matching", e);
+//            LOG.log(Level.SEVERE, "Error al realizar el map matching", e);
+            LOG.log(Level.SEVERE, "Error al realizar el map matching: " + e.getMessage());
+            error = true;
+        }
+        if (!error) {
+            LOG.log(Level.INFO, "Map Matching listo para ruta de: " + trayectory.size()
+                    + " puntos en " + (System.currentTimeMillis() - inicio)/1000 + "s");
         }
         return path;
     }
@@ -62,7 +71,8 @@ public class SpatialTemporalMatching {
                 for (Candidate c2 : currentSet.getCandidates()) {
                     c2.setF(Double.MIN_VALUE);
                     for (Candidate c1 : previousSet.getCandidates()) {
-                        if (!getShortestPath(c1, c2).isEmpty()) {
+                        if (!getShortestPath(c1, c2).isEmpty()) {                        
+//                        if (!getSimpleShortestPath(c1, c2).equals(Double.valueOf("0"))) {
                             double alt = c1.getF() + F(c1, p1, c2, p2);
                             if (alt > c2.getF()) {
                                 c2.setF(alt);
@@ -115,6 +125,7 @@ public class SpatialTemporalMatching {
                     double max = Double.MIN_VALUE;
                     for (Candidate c1 : previousSet.getCandidates()) {
 //                        if (!getShortestPath(c1, c2).isEmpty()) {
+//                        if (!getSimpleShortestPath(c1, c2).equals(Double.valueOf("0"))) {
                             double alt = c1.getF() + F(c1, p1, c2, p2);
                             if (alt > max) {
                                 max = alt;
@@ -125,7 +136,7 @@ public class SpatialTemporalMatching {
                     }
                     if (c2.getPre() == null) {
                         int j = currentSet.getCandidates().indexOf(c2);
-                        LOG.log(Level.SEVERE, "El candidato {0} del punto {1}no se puede alcanzar", new Object[]{j, i});
+//                        LOG.log(Level.SEVERE, "El candidato {0} del punto {1}no se puede alcanzar", new Object[]{j, i});
                     }
                 }
             }
@@ -206,7 +217,7 @@ public class SpatialTemporalMatching {
      */
     public double V(Candidate c1, Point p1, Candidate c2, Point p2) {
         double distanceTo = p1.distanceTo(p2);
-        double shortestPathLength = shortestPathLength(c1, c2);
+        double shortestPathLength = simpleShortestPathLength(c1, c2);
         return distanceTo < shortestPathLength ? 
                distanceTo / shortestPathLength : 
                shortestPathLength / distanceTo;
@@ -229,6 +240,16 @@ public class SpatialTemporalMatching {
             }
         }
         return length;
+    }
+    
+    /**
+     * 
+     * @param c1
+     * @param c2
+     * @return 
+     */
+    private double simpleShortestPathLength(Candidate c1, Candidate c2) {
+        return getSimpleShortestPath(c1, c2);
     }
 
     /*
@@ -272,6 +293,7 @@ public class SpatialTemporalMatching {
      * SHORTESTS PATH
      */
     Map<Candidate, Map<Candidate, List<Result>>> shortestsPathsCache = new HashMap<>();
+//    Map<Candidate, Map<Candidate, Double>> simpleShortestsPathsCache = new HashMap<>(); //createLRUMap(MAX_CACHE);
 
     /**
      *
@@ -294,6 +316,32 @@ public class SpatialTemporalMatching {
         paths.put(c2, path);
         shortestsPathsCache.put(c1, paths);
         return path;
+    }
+    
+    private Double getSimpleShortestPath(Candidate c1, Candidate c2) {
+//        Map<Candidate, Double> paths = simpleShortestsPathsCache.get(c1);
+//        if (paths != null) {
+//            Double path = paths.get(c2);
+//            if (path != null) {
+//                return path;
+//            }
+//        }
+        Double path = shortestPathCalculation.getShortestPathDistance(c1, c2);
+//        if (paths == null) {
+//            paths = new HashMap<>();
+//        }
+//        paths.put(c2, path);
+//        simpleShortestsPathsCache.put(c1, paths);
+        return path;
+    }
+    
+    public static <K, V> Map<K, V> createLRUMap(final int maxEntries) {
+        return new LinkedHashMap<K, V>(maxEntries*10/7, 0.7f, true) {
+            @Override
+            protected boolean removeEldestEntry(Map.Entry<K, V> eldest) {
+                return size() > maxEntries;
+            }
+        };
     }
 
 }
