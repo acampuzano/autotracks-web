@@ -1,14 +1,16 @@
 package py.com.fpuna.autotracks.matching;
 
+import java.util.Locale;
 import py.com.fpuna.autotracks.model.Localizacion;
 
 /**
- * Clase utilitaria que permite calcular la distancia y el bearing entre dos
- * localizaciones
+ * Clase utilitaria que permite realizar operaciones sobre localizaciones y distancias
  *
  * @author Alfredo Campuzano
  */
 public class LocationUtils {
+    
+    private static final double RELATION_DEGREES_METER = 111159.0;
 
     public static float distance(double lat1, double lon1, double lat2, double lon2) {
         float[] results = new float[3];
@@ -127,5 +129,10 @@ public class LocationUtils {
             }
         }
     }
-
+    
+    public static String metersToDegrees(Double accuracy) {
+        double degrees = accuracy / RELATION_DEGREES_METER;
+        String retorno = String.format(Locale.US,"%.8f", degrees);
+        return retorno;
+    }
 }
