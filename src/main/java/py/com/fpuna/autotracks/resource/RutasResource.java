@@ -7,12 +7,14 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
+import java.net.HttpURLConnection;
 import java.sql.Timestamp;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.inject.Inject;
@@ -23,10 +25,13 @@ import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
+import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.core.Response;
 import py.com.fpuna.autotracks.model.Localizacion;
 import py.com.fpuna.autotracks.model.Resultado;
 import py.com.fpuna.autotracks.model.Ruta;
 import py.com.fpuna.autotracks.model.Trafico;
+import py.com.fpuna.autotracks.model.TraficoComplejo;
 import py.com.fpuna.autotracks.service.RutasService;
 import py.com.fpuna.autotracks.util.TimestampDeserializer;
 
@@ -149,7 +154,24 @@ public class RutasResource {
     @GET
     @Path("/trafico")
     public List<Trafico> obtenerTrafico() {
-        return rutasService.obtenerTraficoActual();
+        return rutasService.obtenerTraficoActual();        
+    }
+    
+    @GET
+    @Path("/traficoZona")
+    public List<Map<String,Object>> obtenerTrafico(@QueryParam("lat") String lat,
+            @QueryParam("lon") String lon,
+            @QueryParam("radio") String radio) {
+        if (lat != null && !lat.isEmpty() && lon != null
+                && !lon.isEmpty() && radio != null && !radio.isEmpty()) {
+            return rutasService.obtenerTraficoActual(lat,lon,Double.valueOf(radio));
+        } else {
+            throw new WebApplicationException(
+                Response.status(HttpURLConnection.HTTP_BAD_REQUEST)
+                  .entity("Incluir todos los parámetros requeridos lat, lon, radio")
+                  .build()
+              );
+        }
     }
     
     @GET
@@ -182,6 +204,8 @@ public class RutasResource {
         Ruta rutaTmp;
         long busId;
         
+        logger.info("total de lozalizaciones: " + jArray.size());
+        
         try {
             for (JsonElement json: jArray) {
                 jObject = json.getAsJsonObject();
@@ -191,10 +215,9 @@ public class RutasResource {
                 rutaTmp = new Ruta();
                 rutaTmp.setServerId(busId);
 
-
                 //se obtiene la localización
                 loc = gson.fromJson(jObject.toString(), Localizacion.class);
-
+                
                 if (rutas.contains(rutaTmp)) {
                     rutaTmp = rutas.get(rutas.indexOf(rutaTmp));
                     loc.setRuta(rutaTmp);
@@ -209,6 +232,8 @@ public class RutasResource {
                     rutas.add(rutaTmp);
                 }
             }
+            
+            logger.info("rutas: " + rutas.size());
 
             //Se guardan las rutas
             for (Ruta ruta: rutas) {

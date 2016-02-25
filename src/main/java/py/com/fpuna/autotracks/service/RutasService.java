@@ -1,24 +1,34 @@
 package py.com.fpuna.autotracks.service;
 
+import java.math.BigInteger;
 import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.logging.Logger;
 import javax.ejb.Stateless;
 import javax.inject.Inject;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
+import py.com.fpuna.autotracks.matching.LocationUtils;
 import py.com.fpuna.autotracks.matching2.Matcher;
 import py.com.fpuna.autotracks.model.Localizacion;
 import py.com.fpuna.autotracks.model.Ruta;
 import py.com.fpuna.autotracks.model.Trafico;
+import py.com.fpuna.autotracks.model.TraficoComplejo;
 
 @Stateless
 public class RutasService {
     
+    private static Logger logger = Logger.getLogger(RutasService.class.getSimpleName());
+    
     private static final Integer DOS_HORAS = 2 * 60 * 60 * 1000;
     private static final Integer UNA_HORA = 1 * 60 * 60 * 1000;
     private static final Integer MEDIA_HORA = 30 * 60 * 1000;
+    private static final Integer QUINCE_MINUTOS = 15 * 60 * 1000;
 
     @Inject
     Matcher matcher;
@@ -94,12 +104,58 @@ public class RutasService {
         Calendar fin = Calendar.getInstance();
         Calendar inicio = Calendar.getInstance();
         //se setea el inicio 30 min antes
-        inicio.setTimeInMillis(fin.getTimeInMillis() - UNA_HORA);
+        inicio.setTimeInMillis(fin.getTimeInMillis() - MEDIA_HORA);
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         String query = "SELECT new py.com.fpuna.autotracks.model.Trafico(r.name, r.x1, r.y1, r.x2, r.y2, COUNT(l.id), SUM(l.velocidad))"
                 + "FROM Localizacion l, Asu2po4pgr r where l.wayId = r.id and l.fecha between '" + sdf.format(inicio.getTime()) + "' and '" 
                 + sdf.format(fin.getTime()) + "' group by r.id";
         return em.createQuery(query, Trafico.class).getResultList();
     }
-
+    
+    /**
+     * Permite obtener el estado actual del tráfico en un momento dado dentro de un radio determinado
+     * @param lat
+     * @param lon
+     * @param radio
+     * @return 
+     */
+    public List<Map<String, Object>> obtenerTraficoActual(String lat, String lon, Double radio) {
+        Calendar fin = Calendar.getInstance();
+        Calendar inicio = Calendar.getInstance();
+        //se setea el inicio 30 min antes
+        inicio.setTimeInMillis(fin.getTimeInMillis() - MEDIA_HORA);
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        String query = "SELECT r.x1, r.y1, r.x2, r.y2, COUNT(l.id), SUM(l.velocidad), r.source, r.target "
+                + "FROM localizacion l, asu_2po_4pgr r where l.way_id = r.id and l.fecha between '" + sdf.format(inicio.getTime()) + "' and '" 
+                + sdf.format(fin.getTime()) + "' and ST_DWithin(ST_GeomFromText('SRID=4326;POINT(" + lon + " " + lat + ")'), geom_way, "
+                + LocationUtils.metersToDegrees(radio) + ") group by r.id";
+        List<?> resultList = em.createNativeQuery(query).getResultList();
+        List<Map<String, Object>> retorno = new ArrayList<>();
+        for (int i = 0; i < resultList.size(); i++) {
+                Object[] columns = (Object[]) resultList.get(i);
+                retorno.add(getTraficoComplejoMap(columns));
+        }
+        return retorno;
+    }
+    
+    private TraficoComplejo getTraficoComplejo(Object [] columns) {
+        return new TraficoComplejo((String)columns[0], (Double)columns[1], (Double)columns[2],
+                (Double)columns[3], (Double)columns[4], (Long)columns[5], (Double)columns[6],
+                (Long)columns[7], (Long)columns[8]);
+    }
+    
+    private Map<String, Object> getTraficoComplejoMap(Object [] columns) {
+        Map<String, Object> mapa = new HashMap<>();
+        
+        mapa.put("x1", (Double)columns[0]);
+        mapa.put("y1", (Double)columns[1]);
+        mapa.put("x2", (Double)columns[2]);
+        mapa.put("y2", (Double)columns[3]);
+        mapa.put("cantidad", (BigInteger)columns[4]);
+        mapa.put("kmh", (Float)columns[5]);
+        mapa.put("source", (Integer)columns[6]);
+        mapa.put("target", (Integer)columns[7]);
+        
+        return mapa;
+    }
 }
