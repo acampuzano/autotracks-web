@@ -22,6 +22,10 @@ public class Asu2po4pgr implements Serializable {
     private double y1;
 
     private double y2;
+    
+    private long source;
+    
+    private long target;
 
     public Asu2po4pgr() {
     }
@@ -72,6 +76,22 @@ public class Asu2po4pgr implements Serializable {
 
     public void setY2(double y2) {
         this.y2 = y2;
+    }
+
+    public long getSource() {
+        return source;
+    }
+
+    public void setSource(long source) {
+        this.source = source;
+    }
+
+    public long getTarget() {
+        return target;
+    }
+
+    public void setTarget(long target) {
+        this.target = target;
     }
 
 }
