@@ -31,7 +31,6 @@ import py.com.fpuna.autotracks.model.Localizacion;
 import py.com.fpuna.autotracks.model.Resultado;
 import py.com.fpuna.autotracks.model.Ruta;
 import py.com.fpuna.autotracks.model.Trafico;
-import py.com.fpuna.autotracks.model.TraficoComplejo;
 import py.com.fpuna.autotracks.service.RutasService;
 import py.com.fpuna.autotracks.util.TimestampDeserializer;
 
@@ -103,6 +102,7 @@ public class RutasResource {
         for (Localizacion l : ruta.getLocalizaciones()) {
             l.setRuta(ruta);
             l.setMatched(false);
+            l.setOrigen("app");
         }
         // Guardamos la ruta y retornamos en el resultado el id de la ruta
         // guardada para que la app Android pueda reenviarnos el serverId.
@@ -136,7 +136,7 @@ public class RutasResource {
      */
     @GET
     @Path("/traficoFechaTiempo")
-    public List<Trafico> obtenerTraficoTiempo(@QueryParam("fecha") String fecha,
+    public List<Map<String,Object>> obtenerTraficoTiempo(@QueryParam("fecha") String fecha,
             @QueryParam("minutos") String minutos) {
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         Date fec = new Date();
@@ -148,7 +148,7 @@ public class RutasResource {
         } catch (ParseException ex) {
             Logger.getLogger(RutasResource.class.getName()).log(Level.SEVERE, "Error al transformar la fecha", ex);
         }
-        return rutasService.obtenerTrafico(new Timestamp(fec.getTime()), milis);
+        return rutasService.obtenerTraficoMap(new Timestamp(fec.getTime()), milis);
     }
     
     @GET
@@ -203,6 +203,7 @@ public class RutasResource {
         Localizacion loc;
         Ruta rutaTmp;
         long busId;
+        long inicio = System.currentTimeMillis();
         
         logger.info("total de lozalizaciones: " + jArray.size());
         
@@ -217,23 +218,25 @@ public class RutasResource {
 
                 //se obtiene la localización
                 loc = gson.fromJson(jObject.toString(), Localizacion.class);
+                loc.setMatched(false);
+                loc.setOrigen("bus");
                 
                 if (rutas.contains(rutaTmp)) {
                     rutaTmp = rutas.get(rutas.indexOf(rutaTmp));
                     loc.setRuta(rutaTmp);
-                    loc.setMatched(false);
                     rutaTmp.getLocalizaciones().add(loc);
                 } else {
                     rutaTmp.setLocalizaciones(new ArrayList<Localizacion>());
                     rutaTmp.setFecha(loc.getFecha());
                     loc.setRuta(rutaTmp);
-                    loc.setMatched(false);
                     rutaTmp.getLocalizaciones().add(loc);
                     rutas.add(rutaTmp);
                 }
             }
             
-            logger.info("rutas: " + rutas.size());
+            logger.log(Level.INFO, "rutas: {0}", rutas.size());
+            
+            logger.log(Level.INFO, "tiempo en formar rutas: {0}s", ((System.currentTimeMillis() - inicio) / 1000));
 
             //Se guardan las rutas
             for (Ruta ruta: rutas) {
