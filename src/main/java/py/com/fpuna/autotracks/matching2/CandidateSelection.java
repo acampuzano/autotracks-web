@@ -41,7 +41,7 @@ public class CandidateSelection {
     @PersistenceContext
     EntityManager em;
 
-    public List<CandidateSet> getCandidateSet(List<Point> points) {
+    public List<CandidateSet> getCandidateSet(List<Point> points) throws Exception {
         List<CandidateSet> candidateSets = new ArrayList<>();
         for (Point point : points) {
             List<Candidate> candidates = new ArrayList<>();
@@ -58,7 +58,7 @@ public class CandidateSelection {
         return candidateSets;
     }
 
-    private List<?> getResultList(Point point) {
+    private List<?> getResultList(Point point) throws Exception {
         double lon = point.getLongitude();
         double lat = point.getLatitude();
         String geom = "ST_GeomFromText('SRID=4326;POINT(" + lon + " " + lat + ")')";
@@ -73,6 +73,9 @@ public class CandidateSelection {
         }
         String sql = SQL.replace(":geom", geom).replace(":dist", radius);
         List<?> result = em.createNativeQuery(sql).getResultList();
+        if (result.isEmpty()) {
+            throw new Exception("No se encontraron calles cernanas al punto");
+        }
         return result;
     }
 

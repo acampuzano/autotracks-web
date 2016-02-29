@@ -166,7 +166,7 @@ public class SpatialTemporalMatching {
      * @param points
      * @return
      */
-    public List<CandidateSet> getCandidateSet(List<Point> points) {
+    public List<CandidateSet> getCandidateSet(List<Point> points) throws Exception {
         return candidateSelection.getCandidateSet(points);
     }
 
