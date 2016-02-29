@@ -4,6 +4,7 @@ import java.math.BigInteger;
 import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
@@ -18,7 +19,6 @@ import py.com.fpuna.autotracks.matching2.Matcher;
 import py.com.fpuna.autotracks.model.Localizacion;
 import py.com.fpuna.autotracks.model.Ruta;
 import py.com.fpuna.autotracks.model.Trafico;
-import py.com.fpuna.autotracks.model.TraficoComplejo;
 
 @Stateless
 public class RutasService {
@@ -29,6 +29,14 @@ public class RutasService {
     private static final Integer UNA_HORA = 1 * 60 * 60 * 1000;
     private static final Integer MEDIA_HORA = 30 * 60 * 1000;
     private static final Integer QUINCE_MINUTOS = 15 * 60 * 1000;
+    private static final ArrayList<String> calles = new ArrayList<>(
+            Arrays.asList("Ruta Nacional N° 1 \"Mariscal Francisco Solano López\"","Ruta Mariscal López","Mariscal Francisco Solano López",
+                    "Av. Mariscal Francisco Solano López","Avenida Mariscal Francisco Solano López","mariscal Francisco Solano López",
+                    "avenida doctor Eusebio Ayala","Eusebio Ayala","Doctor Fernando de la Mora","Acceso Sur","España","Avenida España",
+                    "Aviadores del Chaco","Madame Lynch","Madame Elisa A. Lynch","Avda. Madame Lynch","Colectora Madame Lynch",
+                    "Colectora Av. Mme Lynch","Avenida Defensores del Chaco","Ruta Nacional N° 2 \"Mariscal José Félix Estigarribia\"",
+                    "Mcal José Félix Estigarribia","Ruta Mariscal Estigarribia"));
+    
 
     @Inject
     Matcher matcher;
@@ -79,6 +87,9 @@ public class RutasService {
                 + sdf.format(fecha) + "' group by r.id";
         return em.createQuery(query, Trafico.class).getResultList();
     }
+    
+    
+    
     /**
      * Permite obtener el estado del tráfico en un momento dado, durante un periodo dado
      * @param fecha fecha del tráfico
@@ -125,7 +136,7 @@ public class RutasService {
         //se setea el inicio 30 min antes
         inicio.setTimeInMillis(fin.getTimeInMillis() - MEDIA_HORA);
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-        String query = "SELECT r.x1, r.y1, r.x2, r.y2, COUNT(l.id), SUM(l.velocidad), r.source, r.target "
+        String query = "SELECT r.x1, r.y1, r.x2, r.y2, COUNT(l.id), SUM(l.velocidad) * 3.6 / COUNT(l.id), r.source, r.target, r.osm_name "
                 + "FROM localizacion l, asu_2po_4pgr r where l.way_id = r.id and l.fecha between '" + sdf.format(inicio.getTime()) + "' and '" 
                 + sdf.format(fin.getTime()) + "' and ST_DWithin(ST_GeomFromText('SRID=4326;POINT(" + lon + " " + lat + ")'), geom_way, "
                 + LocationUtils.metersToDegrees(radio) + ") group by r.id";
@@ -138,12 +149,6 @@ public class RutasService {
         return retorno;
     }
     
-    private TraficoComplejo getTraficoComplejo(Object [] columns) {
-        return new TraficoComplejo((String)columns[0], (Double)columns[1], (Double)columns[2],
-                (Double)columns[3], (Double)columns[4], (Long)columns[5], (Double)columns[6],
-                (Long)columns[7], (Long)columns[8]);
-    }
-    
     private Map<String, Object> getTraficoComplejoMap(Object [] columns) {
         Map<String, Object> mapa = new HashMap<>();
         
@@ -152,10 +157,62 @@ public class RutasService {
         mapa.put("x2", (Double)columns[2]);
         mapa.put("y2", (Double)columns[3]);
         mapa.put("cantidad", (BigInteger)columns[4]);
-        mapa.put("kmh", (Float)columns[5]);
+        mapa.put("kmh", (Double)columns[5]);
         mapa.put("source", (Integer)columns[6]);
         mapa.put("target", (Integer)columns[7]);
-        
+        if(calles.contains((String)columns[8])) {
+            mapa.put("nivel", 1);
+        } else {
+            mapa.put("nivel", 0);
+        }
         return mapa;
+    }
+    
+    /**
+     * Permite obtener el estado del tráfico en un momento dado
+     * @param fecha
+     * @return 
+     */
+    public List<Map<String, Object>> obtenerTraficoMap(Timestamp fecha) {
+        Calendar inicio = Calendar.getInstance();
+        //se setea el inicio 30 min antes
+        inicio.setTimeInMillis(fecha.getTime() - MEDIA_HORA);
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        
+        String query = "SELECT r.x1, r.y1, r.x2, r.y2, COUNT(l.id), SUM(l.velocidad) * 3.6 / COUNT(l.id), r.source, r.target, r.osm_name "
+                + "FROM localizacion l, asu_2po_4pgr r where l.way_id = r.id and l.fecha between '" + sdf.format(inicio.getTime()) + "' and '" 
+                + sdf.format(fecha) + "' group by r.id";
+        
+        List<?> resultList = em.createNativeQuery(query).getResultList();
+        List<Map<String, Object>> retorno = new ArrayList<>();
+        for (int i = 0; i < resultList.size(); i++) {
+                Object[] columns = (Object[]) resultList.get(i);
+                retorno.add(getTraficoComplejoMap(columns));
+        }
+        return retorno;
+    }
+    
+    /**
+     * Permite obtener el estado del tráfico en un momento dado, durante un periodo dado
+     * @param fecha fecha del tráfico
+     * @param tiempo periodo de tiempo en milis
+     * @return 
+     */
+    public List<Map<String, Object>> obtenerTraficoMap(Timestamp fecha, Integer tiempo) {
+        Calendar inicio = Calendar.getInstance();
+        //se setea el inicio 30 min antes
+        inicio.setTimeInMillis(fecha.getTime() - tiempo);
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        String query = "SELECT r.x1, r.y1, r.x2, r.y2, COUNT(l.id), SUM(l.velocidad) * 3.6 / COUNT(l.id), r.source, r.target, r.osm_name "
+                + "FROM localizacion l, asu_2po_4pgr r where l.way_id = r.id and l.fecha between '" + sdf.format(inicio.getTime()) + "' and '" 
+                + sdf.format(fecha) + "' group by r.id";
+        
+        List<?> resultList = em.createNativeQuery(query).getResultList();
+        List<Map<String, Object>> retorno = new ArrayList<>();
+        for (int i = 0; i < resultList.size(); i++) {
+                Object[] columns = (Object[]) resultList.get(i);
+                retorno.add(getTraficoComplejoMap(columns));
+        }
+        return retorno;
     }
 }
