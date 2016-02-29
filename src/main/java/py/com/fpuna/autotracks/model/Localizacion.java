@@ -62,6 +62,9 @@ public class Localizacion implements Serializable {
     
     @Column(name = "WAY_ID", nullable = true)
     private Integer wayId;
+    
+    @Column(name = "ORIGEN", nullable = true, length = 3)
+    private String origen;
 
     public Long getId() {
         return id;
@@ -173,6 +176,14 @@ public class Localizacion implements Serializable {
 
     public void setWayId(Integer wayId) {
         this.wayId = wayId;
+    }
+
+    public String getOrigen() {
+        return origen;
+    }
+
+    public void setOrigen(String origen) {
+        this.origen = origen;
     }
 
     @Override
